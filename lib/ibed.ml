@@ -44,7 +44,7 @@ let sort ?(desc = false) =
 	else
 		List.sort compare
 
-let select_bait_by_loc (loc : GLoc.t) c_lst =
+let select_baits_by_loc (loc : GLoc.t) c_lst =
 	let rec aux res = function
 		| hd::tl 	when loc.chr <> hd.bait.chr 			-> aux res tl
 		| hd::_ 	when loc.hi < hd.bait.lo 					-> res
@@ -56,7 +56,7 @@ let select_bait_by_loc (loc : GLoc.t) c_lst =
 		|> sort
 		|> aux []
 
-let select_bait_by_chr chr c_lst =
+let select_baits_by_chr chr c_lst =
 	let rec aux res = function
 		| hd::tl when res = [] &&
 									chr <> hd.bait.chr 	-> aux res tl

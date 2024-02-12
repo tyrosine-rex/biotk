@@ -15,9 +15,9 @@ val to_line : t -> string
 
 val sort : ?desc:bool -> t list -> t list
 
-val select_bait_by_loc : GLoc.t -> t list -> t list
+val select_baits_by_loc : GLoc.t -> t list -> t list
 
-val select_bait_by_chr : string -> t list -> t list
+val select_baits_by_chr : string -> t list -> t list
 
 val group_by_chr : t list -> (string * t list) list
 

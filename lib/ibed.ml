@@ -12,9 +12,9 @@ let compare c1 c2 =
 
 let head = "bait_chr\tbait_start\tbait_end\tbait_name\totherEnd_chr\totherEnd_start\totherEnd_end\totherEnd_name\tN_reads\tscore"
 
-let ibed_fmt = ("%s %d %d %s %s %d %d %s %d %f" : _ format)
+let ibed_fmt = ("%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%d\t%f" : _ format)
 
-let ibed_fmt6 = ("%s %d %d %s %s %d %d %s %d %f" : _ format6)
+let ibed_fmt6 = ("%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%d\t%f" : _ format6)
 
 let from_line s =
 	Scanf.sscanf s ibed_fmt6 (

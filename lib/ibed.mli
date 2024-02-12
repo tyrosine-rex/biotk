@@ -9,8 +9,6 @@ type t = {
 
 val compare : t -> t -> int
 
-val is_intersect : t -> GLoc.t -> bool
-
 val from_string : string -> t
 
 val to_string : t -> string

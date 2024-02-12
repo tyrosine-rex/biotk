@@ -12,9 +12,6 @@ let compare c1 c2 =
 		| 0 -> compare c1.bait.lo c2.bait.lo
 		| n -> n
 
-let is_intersect c loc =
-	GLoc.intersects c.bait loc
-
 let head = "bait_chr\tbait_start\tbait_end\tbait_name\totherEnd_chr\totherEnd_start\totherEnd_end\totherEnd_name\tN_reads\tscore"
 
 let ibed_fmt = ("%s %d %d %s %s %d %d %s %d %f" : _ format)
@@ -49,11 +46,11 @@ let sort ?(desc = false) =
 
 let select_bait (loc : GLoc.t) c_lst =
 	let rec aux res = function
-		| hd::tl 	when loc.chr <> hd.bait.chr -> aux res tl
-		| hd::_ 	when loc.hi < hd.bait.lo 		-> res
-		| hd::tl 	when is_intersect hd loc 		-> aux (hd::res) tl
-		| _::tl 															-> aux res tl
-		| [] 																	-> res
+		| hd::tl 	when loc.chr <> hd.bait.chr 			-> aux res tl
+		| hd::_ 	when loc.hi < hd.bait.lo 					-> res
+		| hd::tl 	when GLoc.intersects hd.bait loc 	-> aux (hd::res) tl
+		| _::tl 																		-> aux res tl
+		| [] 																				-> res
 	in
 	c_lst
 		|> sort
@@ -62,9 +59,9 @@ let select_bait (loc : GLoc.t) c_lst =
 let select_chr chr c_lst =
 	let rec aux res = function
 		| hd::tl when res = [] &&
-									chr <> hd.bait.chr 		-> aux res tl
+									chr <> hd.bait.chr 	-> aux res tl
 		| hd::tl when chr = hd.bait.chr		-> aux (hd::res) tl
-		| _ -> res
+		| _ 															-> res
 	in
 	c_lst
 		|> sort
@@ -72,8 +69,10 @@ let select_chr chr c_lst =
 
 let group_by_chr c_lst =
 	let fold_fun acc c =
-		let prev_grp, rest = List.hd acc, List.tl acc in
-		if c.bait.chr = (List.hd prev_grp).bait.chr then
+		let rest = List.tl acc in
+		let prev_grp = List.hd acc in
+		let prev_chr = (List.hd prev_grp).bait.chr in
+		if c.bait.chr = prev_chr then
 			(c::prev_grp)::rest
 		else
 			[c]::prev_grp::rest

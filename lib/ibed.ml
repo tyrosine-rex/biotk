@@ -65,19 +65,25 @@ let select_baits_by_chr chr c_lst =
 		|> sort
 		|> aux []
 
+let fold_fun fun_comp acc (c:t) =
+	let rest = List.tl acc in
+	let prev_grp = List.hd acc in
+	let prev_c = List.hd prev_grp in
+	if fun_comp prev_c c then
+		(c::prev_grp)::rest
+	else
+		[c]::prev_grp::rest
+
+let group_by_bait c_lst =
+	let fold_fun' = fold_fun (fun c1 c2 -> c1.bait = c2.bait) in
+	let c_lst_srt = sort c_lst in
+	List.fold_left fold_fun' ([[List.hd c_lst_srt]]) (List.tl c_lst_srt)
+
 let group_by_chr c_lst =
-	let fold_fun acc c =
-		let rest = List.tl acc in
-		let prev_grp = List.hd acc in
-		let prev_chr = (List.hd prev_grp).bait.chr in
-		if c.bait.chr = prev_chr then
-			(c::prev_grp)::rest
-		else
-			[c]::prev_grp::rest
-	in
+	let fold_fun' = fold_fun (fun c1 c2 -> c1.bait.chr = c2.bait.chr) in
 	let c_lst_srt = sort c_lst in
 	List.tl c_lst_srt
-		|> List.fold_left fold_fun [[List.hd c_lst_srt]]
+		|> List.fold_left fold_fun' [[List.hd c_lst_srt]]
 		|> List.map (fun grp -> ((List.hd grp).bait.chr, grp))
 
 let read_ibed ?(header = true) f_path =

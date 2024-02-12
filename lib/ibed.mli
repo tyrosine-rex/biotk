@@ -19,6 +19,8 @@ val select_baits_by_loc : GLoc.t -> t list -> t list
 
 val select_baits_by_chr : string -> t list -> t list
 
+val group_by_bait : t list -> t list list
+
 val group_by_chr : t list -> (string * t list) list
 
 val read_ibed : ?header:bool -> string -> t list

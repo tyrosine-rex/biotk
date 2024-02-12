@@ -29,12 +29,17 @@ let from_line s =
 	)
 
 let to_line c =
-	let b_n = String.concat ";" c.bait_names in
-	let o_n = String.concat ";" c.other_names in
 	Printf.sprintf ibed_fmt
-		c.bait.chr	c.bait.lo		c.bait.hi		b_n
-		c.other.chr	c.other.lo	c.other.hi	o_n
-		c.n_reads	c.score
+		c.bait.chr
+		c.bait.lo
+		c.bait.hi
+		(String.concat ";" c.bait_names)
+		c.other.chr
+		c.other.lo
+		c.other.hi
+		(String.concat ";" c.other_names)
+		c.n_reads
+		c.score
 
 let sort ?(desc = false) =
 	if desc then

@@ -19,12 +19,12 @@ let ibed_fmt6 = ("%s %d %d %s %s %d %d %s %d %f" : _ format6)
 let from_line s =
 	Scanf.sscanf s ibed_fmt6 (
 		fun b_c b_lo b_hi b_n o_c o_lo o_hi o_n n_read scr -> {
-			bait_names = 	String.split_on_char ';' b_n;
-			bait = 				GLoc.{chr=b_c; lo=b_lo; hi=b_hi};
+			bait_names = String.split_on_char ';' b_n;
+			bait = GLoc.{chr=b_c; lo=b_lo; hi=b_hi};
 			other_names = String.split_on_char ';' o_n;
-			other = 			GLoc.{chr=o_c; lo=o_lo; hi=o_hi};
-			n_reads = 		n_read;
-			score = 			scr;
+			other = GLoc.{chr=o_c; lo=o_lo; hi=o_hi};
+			n_reads = n_read;
+			score = scr;
 		}
 	)
 
@@ -44,11 +44,11 @@ let sort ?(desc = false) =
 
 let select_baits_by_loc (loc : GLoc.t) c_lst =
 	let rec aux res = function
-		| hd::tl 	when loc.chr <> hd.bait.chr 			-> aux res tl
-		| hd::_ 	when loc.hi < hd.bait.lo 					-> res
-		| hd::tl 	when GLoc.intersects hd.bait loc 	-> aux (hd::res) tl
-		| _::tl 																		-> aux res tl
-		| [] 																				-> res
+		| hd::tl when loc.chr <> hd.bait.chr -> aux res tl
+		| hd::_ when loc.hi < hd.bait.lo -> res
+		| hd::tl when GLoc.intersects hd.bait loc -> aux (hd::res) tl
+		| _::tl -> aux res tl
+		| [] -> res
 	in
 	c_lst
 		|> sort
@@ -56,16 +56,15 @@ let select_baits_by_loc (loc : GLoc.t) c_lst =
 
 let select_baits_by_chr chr c_lst =
 	let rec aux res = function
-		| hd::tl when res = [] &&
-									chr <> hd.bait.chr 	-> aux res tl
-		| hd::tl when chr = hd.bait.chr		-> aux (hd::res) tl
-		| _ 															-> res
+		| hd::tl when res = [] && chr <> hd.bait.chr -> aux res tl
+		| hd::tl when chr = hd.bait.chr -> aux (hd::res) tl
+		| _ -> res
 	in
 	c_lst
 		|> sort
 		|> aux []
 
-let fold_fun fun_comp acc (c:t) =
+let fold_fun fun_comp acc (c : t) =
 	let rest = List.tl acc in
 	let prev_grp = List.hd acc in
 	let prev_c = List.hd prev_grp in

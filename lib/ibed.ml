@@ -18,7 +18,7 @@ let ibed_fmt = ("%s %d %d %s %s %d %d %s %d %f" : _ format)
 
 let ibed_fmt6 = ("%s %d %d %s %s %d %d %s %d %f" : _ format6)
 
-let from_string s =
+let from_line s =
 	Scanf.sscanf s ibed_fmt6 (
 		fun b_c b_lo b_hi b_n o_c o_lo o_hi o_n n_read scr -> {
 			bait_names = 	String.split_on_char ';' b_n;
@@ -30,7 +30,7 @@ let from_string s =
 		}
 	)
 
-let to_string c =
+let to_line c =
 	let b_n = String.concat ";" c.bait_names in
 	let o_n = String.concat ";" c.other_names in
 	Printf.sprintf ibed_fmt
@@ -84,15 +84,15 @@ let group_by_chr c_lst =
 
 let read_ibed ?(header = true) f_path =
 	let idx_offset = if header then 2 else 1 in
-	let from_string' idx l =
-		try from_string l
+	let from_line' idx l =
+		try from_line l
 		with _ -> failwith (Printf.sprintf "Please check the format of (%s) near line (%d)" f_path (idx + idx_offset))
 	in
 	let lines = Core.In_channel.read_lines f_path in
-	List.mapi from_string' (if header then List.tl lines else lines)
+	List.mapi from_line' (if header then List.tl lines else lines)
 
 let write_ibed ?(header = true) f_path lst =
 	lst
-		|> List.map to_string
+		|> List.map to_line
 		|> List.cons (if header then head else "")
 		|> Core.Out_channel.write_lines f_path

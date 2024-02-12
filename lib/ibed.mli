@@ -9,9 +9,9 @@ type t = {
 
 val compare : t -> t -> int
 
-val from_string : string -> t
+val from_line : string -> t
 
-val to_string : t -> string
+val to_line : t -> string
 
 val sort : ?desc:bool -> t list -> t list
 

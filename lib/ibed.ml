@@ -8,9 +8,7 @@ type t = {
 }
 
 let compare c1 c2 =
-	match compare c1.bait.chr c2.bait.chr with
-		| 0 -> compare c1.bait.lo c2.bait.lo
-		| n -> n
+	compare c1.bait c2.bait
 
 let head = "bait_chr\tbait_start\tbait_end\tbait_name\totherEnd_chr\totherEnd_start\totherEnd_end\totherEnd_name\tN_reads\tscore"
 
@@ -77,9 +75,9 @@ let group_by_chr c_lst =
 		else
 			[c]::prev_grp::rest
 	in
-	let c_sorted = sort c_lst in
-	List.tl c_sorted
-		|> List.fold_left fold_fun [[List.hd c_sorted]]
+	let c_lst_srt = sort c_lst in
+	List.tl c_lst_srt
+		|> List.fold_left fold_fun [[List.hd c_lst_srt]]
 		|> List.map (fun grp -> ((List.hd grp).bait.chr, grp))
 
 let read_ibed ?(header = true) f_path =

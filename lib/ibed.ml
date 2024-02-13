@@ -110,3 +110,45 @@ let to_file ?(header = true) f_path it_lst =
     |> List.map to_line
     |> List.cons (if header then head else "")
     |> Core.Out_channel.write_lines f_path
+
+
+(* for testing *)
+
+
+let printf_item it =
+  Printf.sprintf "%s --> %s\t (%s) --> (%s)(rd:%d;sc:%f)"
+    (GLoc.to_string it.bait)
+    (GLoc.to_string it.other)
+    (String.concat ";" it.bait_names)
+    (String.concat ";" it.other_names)
+    it.n_reads it.score
+
+let printf_it_lst it_lst =
+  String.concat "\n" @@ List.map printf_item it_lst
+
+let%expect_test "fromfile_sort_orderize_1" =
+  Printf.printf "%s" (printf_it_lst @@ sort @@ from_file "../data/test.ibed");
+  [%expect {| |}]
+
+let%expect_test "fromfile_sort_orderize_2" =
+  Printf.printf "%s" (printf_it_lst @@ sort ~desc:true @@ from_file "../data/test.ibed");
+  [%expect {| |}]
+
+let%expect_test "fromfile_select_baits_by_loc" =
+  let loc = GLoc.({chr="5"; lo=2000; hi=3500}) in
+  Printf.printf "%s" (printf_it_lst @@ select_baits_by_loc loc @@ from_file "../data/test.ibed");
+  [%expect {| |}]
+
+let%expect_test "fromfile_select_baits_by_chr" =
+  Printf.printf "%s" (printf_it_lst @@ select_baits_by_chr "2" @@ from_file "../data/test.ibed");
+  [%expect {| |}]
+
+let%expect_test "group_by_bait" =
+  let gb = group_by_bait @@ from_file "../data/test.ibed" in
+  Printf.printf "%s" (String.concat "\n" @@ List.mapi (fun i c -> Printf.sprintf "\ngrp%d:\n%s" i (printf_it_lst c)) gb);
+  [%expect {| |}]
+
+let%expect_test "group_by_chr" =
+  let gb = group_by_chr @@ from_file "../data/test.ibed" in
+  Printf.printf "%s" (String.concat "\n" @@ List.map (fun (c, l) -> Printf.sprintf "\n%s:\n%s" c (printf_it_lst l)) gb);
+  [%expect {| |}]

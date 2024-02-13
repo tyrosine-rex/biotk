@@ -1,28 +1,50 @@
-type t = {
-    bait_names: string list;
-    bait: GLoc.t;
-    other_names: string list;
-    other: GLoc.t;
-    n_reads: int;
-    score: float;
-}
+(** {b ibed format}
 
-val compare : t -> t -> int
+  [.ibed] files are produced by {{:https://doi.org/10.1186/s13059-016-0992-2}CHiCAGO} software
+  for detecting statistically significant interaction events in Capture HiC data.
+  Each row represents a chromosomal interaction.
+  You can check what such a file looks like {{:https://www.bioconductor.org/packages/devel/bioc/vignettes/Chicago/inst/doc/Chicago.html#ibed-format-ends-with-ibed} here}.
+  This module offers a representation of this kind of file (essentially a list of records)
+  and some functions to handle this type.
 
-val from_line : string -> t
+  exemple:
+  {[
+    open Biotk
 
-val to_line : t -> string
+    let () =
+      Ibed.from_file "data/pchic/mouse.ibed"
+        |> Ibed.select_baits_by_chr "chr10"
+        |> Ibed.to_file "data/pchic/mouse_chr10.ibed"
+  ]}
+*)
 
-val sort : ?desc:bool -> t list -> t list
+type item = {
+  bait_names: string list;
+  bait: GLoc.t;
+  other_names: string list;
+  other: GLoc.t;
+  n_reads: int;
+  score: float;
+  }
 
-val select_baits_by_loc : GLoc.t -> t list -> t list
+type t = item list
 
-val select_baits_by_chr : string -> t list -> t list
+(** Sort contacts by the genomic locaction of bait part, ascending by default. *)
+val sort : ?desc:bool -> t -> t
 
-val group_by_bait : t list -> t list list
+(** [select_baits_by_loc loc contacts] Select all baits that intersect with [loc] genomic location. *)
+val select_baits_by_loc : GLoc.t -> t -> t
 
-val group_by_chr : t list -> (string * t list) list
+(** [select_baits_by_chr chr contacts] Select all baits that belong to [chr] chromosome. *)
+val select_baits_by_chr : string -> t -> t
 
-val read_ibed : ?header:bool -> string -> t list
+(** Produce a list of contacts list, each sublist contains all contact that share the same bait. *)
+val group_by_bait : t -> t list
 
-val write_ibed : ?header:bool -> string -> t list -> unit
+(** Produce a list of tuple, first element of the couple is the chromosome, the second is all contacts
+    that belong to this chromosome. *)
+val group_by_chr : t -> (string * t) list
+
+val from_file : ?header:bool -> string -> t
+
+val to_file : ?header:bool -> string -> t -> unit

@@ -25,7 +25,7 @@ type item = {
   other: GLoc.t;
   n_reads: int;
   score: float;
-  }
+}
 
 type t = item list
 
@@ -33,10 +33,10 @@ type t = item list
 val sort : ?desc:bool -> t -> t
 
 (** [select_baits_by_loc loc contacts] Select all baits that intersect with [loc] genomic location. *)
-val select_baits_by_loc : GLoc.t -> t -> t
+val select_baits_by_loc : loc:GLoc.t -> t -> t
 
 (** [select_baits_by_chr chr contacts] Select all baits that belong to [chr] chromosome. *)
-val select_baits_by_chr : string -> t -> t
+val select_baits_by_chr : chr:string -> t -> t
 
 (** Produce a list of contacts list, each sublist contains all contact that share the same bait. *)
 val group_by_bait : t -> t list
@@ -45,6 +45,6 @@ val group_by_bait : t -> t list
     that belong to this chromosome. *)
 val group_by_chr : t -> (string * t) list
 
-val from_file : ?header:bool -> string -> t
+val from_file : ?header:bool -> path:string -> t
 
-val to_file : ?header:bool -> string -> t -> unit
+val to_file : ?header:bool -> path:string -> t -> unit

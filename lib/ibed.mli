@@ -13,8 +13,8 @@
 
     let () =
       Ibed.from_file "data/pchic/mouse.ibed"
-        |> Ibed.select_baits_by_chr "chr10"
-        |> Ibed.to_file "data/pchic/mouse_chr10.ibed"
+        |> List.filter (fun i -> i.bait.chr = "chr13")
+        |> Ibed.to_file "data/pchic/mouse_chr13.ibed"
   ]}
 *)
 

@@ -15,7 +15,7 @@ let ibed_fmt = ("%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%d\t%f" : _ format)
 
 let ibed_fmt6 = ("%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\t%d\t%f" : _ format6)
 
-let orderize it1 it2 =
+let order_baits it1 it2 =
   GLoc.compare it1.bait it2.bait
 
 let of_line_exn s =
@@ -44,35 +44,7 @@ let to_line it =
     it.score
 
 let sort ?(desc = false) =
-  List.sort (if not desc then orderize else Fun.flip orderize)
-
-let select_baits_by_loc (loc : GLoc.t) it_lst =
-  let rec aux res = function
-    | [] -> res
-    | hd::tl -> if hd.bait.chr <> loc.chr then (*not same chromosome*)
-                  aux res tl
-                else if hd.bait.hi < loc.lo then (*same chromosome, but loc is overtake -> break*)
-                  res
-                else if GLoc.intersects hd.bait loc then (*hd intersect loc*)
-                  aux (hd::res) tl
-                else (*same chromosome and loc not reached*)
-                  aux res tl
-  in it_lst
-    |> sort ~desc:true
-    |> aux []
-
-let select_baits_by_chr chr it_lst =
-  let rec aux res = function
-    | [] -> res
-    | hd::tl -> if res = [] && hd.bait.chr <> chr then
-                  aux res tl
-                else if hd.bait.chr = chr then
-                  aux (hd::res) tl
-                else (*not same chromosome but res is filled -> chromosome is overtake -> break*)
-                  res
-  in it_lst
-    |> sort ~desc:true
-    |> aux []
+  List.sort (if not desc then order_baits else Fun.flip order_baits)
 
 let gb_fold_fun comp_func acc (it : item) =
   match acc with
@@ -81,22 +53,25 @@ let gb_fold_fun comp_func acc (it : item) =
                           (it::hd::tl)::rest
                         else
                           [it]::(hd::tl)::rest
-    | _ -> failwith "This pattern is not supposed to happen"
+    | _ -> assert false
+
+let group_by fold_fn map_fn = function
+  | [] -> []
+  | _::_ as lst -> sort lst
+                    |> List.fold_left fold_fn [[]]
+                    |> List.map map_fn
 
 let group_by_bait it_lst =
-  let fold_fun' = gb_fold_fun (fun c1 c2 -> c1.bait = c2.bait)
-  in it_lst
-    |> sort
-    |> List.fold_left fold_fun' [[]]
+  let fold_fun = gb_fold_fun (fun c1 c2 -> c1.bait = c2.bait) in
+  let map_fun = fun grp -> (List.hd grp).bait, grp in
+  group_by fold_fun map_fun it_lst
 
 let group_by_chr it_lst =
-  let fold_fun' = gb_fold_fun (fun c1 c2 -> c1.bait.chr = c2.bait.chr)
-  in it_lst
-    |> sort
-    |> List.fold_left fold_fun' [[]]
-    |> List.map (fun grp -> (List.hd grp).bait.chr, grp)
+  let fold_fun = gb_fold_fun (fun c1 c2 -> c1.bait.chr = c2.bait.chr) in
+  let map_fun = fun grp -> (List.hd grp).bait.chr, grp in
+  group_by fold_fun map_fun it_lst
 
-let from_file ?(header = true) f_path =
+let from_file_exn ?(header = true) f_path =
   let idx_offset = if header then 2 else 1 in
   let from_line' idx l =
     try of_line_exn l
@@ -114,6 +89,8 @@ let to_file ?(header = true) f_path it_lst =
 
 (* for testing *)
 
+let print_loc (loc : GLoc.t) =
+  Printf.sprintf "%s:%d-%d" loc.chr loc.lo loc.hi
 
 let printf_item it =
   Printf.sprintf "%s --> %s\t (%s) --> (%s)(rd:%d;sc:%f)"
@@ -127,7 +104,7 @@ let printf_it_lst it_lst =
   String.concat "\n" @@ List.map printf_item it_lst
 
 let%expect_test "fromfile_sort_orderize_1" =
-  Printf.printf "%s" (printf_it_lst @@ sort @@ from_file "../data/test.ibed");
+  Printf.printf "%s" (printf_it_lst @@ sort @@ from_file_exn "../data/test.ibed");
   [%expect {|
     1:100-200 --> 1:800-900	 (A1;A2;A3) --> (B1;B2)(rd:10;sc:1.234500)
     2:2000-3000 --> 2:200-300	 (C1) --> (D1)(rd:100;sc:9.990000)
@@ -143,7 +120,7 @@ let%expect_test "fromfile_sort_orderize_1" =
     X:2000-2500 --> X:24680-91000	 (G1;G2) --> (Z1)(rd:5;sc:130.000000) |}]
 
 let%expect_test "fromfile_sort_orderize_2" =
-  Printf.printf "%s" (printf_it_lst @@ sort ~desc:true @@ from_file "../data/test.ibed");
+  Printf.printf "%s" (printf_it_lst @@ sort ~desc:true @@ from_file_exn "../data/test.ibed");
   [%expect {|
     X:2000-2500 --> X:12345-71000	 (G1;G2) --> (X1)(rd:3;sc:110.000000)
     X:2000-2500 --> X:13579-81000	 (G1;G2) --> (Y1)(rd:4;sc:120.000000)
@@ -158,57 +135,42 @@ let%expect_test "fromfile_sort_orderize_2" =
     2:2000-3000 --> 2:200-300	 (C1) --> (D1)(rd:100;sc:9.990000)
     1:100-200 --> 1:800-900	 (A1;A2;A3) --> (B1;B2)(rd:10;sc:1.234500) |}]
 
-let%expect_test "fromfile_select_baits_by_loc" =
-  let loc = GLoc.({chr="5"; lo=2000; hi=3500}) in
-  Printf.printf "%s" (printf_it_lst @@ select_baits_by_loc loc @@ from_file "../data/test.ibed");
-  [%expect {|
-    5:3000-3500 --> 5:60300-60800	 (K1) --> (L1;L2)(rd:729;sc:76.890000)
-    5:3200-3890 --> 5:70600-70800	 (I1) --> (Q1)(rd:876;sc:19.000000)
-    5:3200-3890 --> 5:600-800	 (I1) --> (J1;J2)(rd:999;sc:141.590000)
-    5:3200-4400 --> 5:7300-7800	 (M1;M2) --> (N1)(rd:29;sc:1.590000) |}]
-
-let%expect_test "fromfile_select_baits_by_chr" =
-  Printf.printf "%s" (printf_it_lst @@ select_baits_by_chr "2" @@ from_file "../data/test.ibed");
-  [%expect {|
-    2:2000-3000 --> 2:200-300	 (C1) --> (D1)(rd:100;sc:9.990000)
-    2:2300-9300 --> 2:1200-1300	 (C1) --> (D1)(rd:100;sc:9.990000) |}]
-
 let%expect_test "group_by_bait" =
-  let gb = group_by_bait @@ from_file "../data/test.ibed" in
-  Printf.printf "%s" (String.concat "\n" @@ List.mapi (fun i c -> Printf.sprintf "\ngrp%d:\n%s" i (printf_it_lst c)) gb);
+  let gb = group_by_bait @@ from_file_exn "../data/test.ibed" in
+  Printf.printf "%s" (String.concat "\n" @@ List.map (fun c -> Printf.sprintf "\ngrp%s:\n%s" (print_loc @@ fst c) (printf_it_lst @@ snd c)) gb);
   [%expect {|
-    grp0:
+    grpX:2000-2500:
     X:2000-2500 --> X:24680-91000	 (G1;G2) --> (Z1)(rd:5;sc:130.000000)
     X:2000-2500 --> X:13579-81000	 (G1;G2) --> (Y1)(rd:4;sc:120.000000)
     X:2000-2500 --> X:12345-71000	 (G1;G2) --> (X1)(rd:3;sc:110.000000)
 
-    grp1:
+    grp5:3900-4400:
     5:3900-4400 --> 5:11100-11750	 (O1) --> (P1)(rd:29;sc:1.590000)
 
-    grp2:
+    grp5:3200-4400:
     5:3200-4400 --> 5:7300-7800	 (M1;M2) --> (N1)(rd:29;sc:1.590000)
 
-    grp3:
+    grp5:3200-3890:
     5:3200-3890 --> 5:70600-70800	 (I1) --> (Q1)(rd:876;sc:19.000000)
     5:3200-3890 --> 5:600-800	 (I1) --> (J1;J2)(rd:999;sc:141.590000)
 
-    grp4:
+    grp5:3000-3500:
     5:3000-3500 --> 5:60300-60800	 (K1) --> (L1;L2)(rd:729;sc:76.890000)
 
-    grp5:
+    grp5:1000-1500:
     5:1000-1500 --> 5:3000-3500	 (E1) --> (F1)(rd:99;sc:3.141590)
 
-    grp6:
+    grp2:2300-9300:
     2:2300-9300 --> 2:1200-1300	 (C1) --> (D1)(rd:100;sc:9.990000)
 
-    grp7:
+    grp2:2000-3000:
     2:2000-3000 --> 2:200-300	 (C1) --> (D1)(rd:100;sc:9.990000)
 
-    grp8:
+    grp1:100-200:
     1:100-200 --> 1:800-900	 (A1;A2;A3) --> (B1;B2)(rd:10;sc:1.234500) |}]
 
 let%expect_test "group_by_chr" =
-  let gb = group_by_chr @@ from_file "../data/test.ibed" in
+  let gb = group_by_chr @@ from_file_exn "../data/test.ibed" in
   Printf.printf "%s" (String.concat "\n" @@ List.map (fun (c, l) -> Printf.sprintf "\n%s:\n%s" c (printf_it_lst l)) gb);
   [%expect {|
     X:
